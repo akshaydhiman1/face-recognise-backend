@@ -1,47 +1,54 @@
 from flask import Flask, g, request, current_app
 from flask_cors import CORS
 from datetime import datetime
-from extension import db  # Import db from extension.py
+from extension import db
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+print(f"Loaded FRONTEND_URL: {os.getenv('FRONTEND_URL', 'Not found')}")
 
 def create_app():
     app = Flask(__name__)
-    print(f"Creating Flask app: {app}")  # Debug: Confirm app creation
-    CORS(app, resources={r"/*": {"origins": ["https://face-recognition-app-sepia.vercel.app", "http://localhost:3000"], "supports_credentials": True}})  # Allow requests from React frontend with credentials
+    print(f"Creating Flask app: {app}")
 
-    # Configure the database
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///face_recognition.db'
+    frontend_urls = os.getenv("FRONTEND_URL", "http://localhost:3000").split(",")
+    CORS(app, resources={r"/*": {
+        "origins": frontend_urls,
+        "supports_credentials": True,
+        "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "max_age": 86400
+    }})
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URI", "sqlite:///face_recognition.db")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.secret_key = 'simple-key'  # Basic secret key for sessions
+    app.secret_key = os.getenv("SECRET_KEY", "simple-key")
 
-    # Initialize SQLAlchemy with the app
     db.init_app(app)
-    print(f"SQLAlchemy initialized with app: {db}")  # Debug: Confirm SQLAlchemy init
+    print(f"SQLAlchemy initialized with app: {db}")
 
-    # Import blueprints and models before registration
     from admin import admin_bp
     from user import user_bp
-    from models import User, LoginLog, RecognizedPhoto  # Import models
-    print(f"Imported blueprints: admin_bp={admin_bp}, user_bp={user_bp}")  # Debug: Confirm imports
+    from models import User, LoginLog, RecognizedPhoto
+    print(f"Imported blueprints: admin_bp={admin_bp}, user_bp={user_bp}")
 
-    # Register blueprints
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(user_bp, url_prefix='/user')
-    print(f"Blueprints registered: {app.blueprints}")  # Debug: Confirm registration
+    print(f"Blueprints registered: {app.blueprints}")
 
-    # Add before_request to debug context
     @app.before_request
     def before_request():
         g.request_start_time = datetime.now()
-        print(f"Before request: {request.path if 'path' in request.__dict__ else 'No path available'}, Context: {current_app._get_current_object()}")  # Debug with safe access
+        print(f"Before request: {request.path if 'path' in request.__dict__ else 'No path available'}, Context: {current_app._get_current_object()}")
 
-    # Create database tables (requires app context)
     with app.app_context():
-        print(f"Creating database tables in context: {app}")  # Debug: Confirm context
+        print(f"Creating database tables in context: {app}")
         db.create_all()
 
     return app
 
 if __name__ == '__main__':
     app = create_app()
-    print(f"Running app: {app}")  # Debug: Confirm app run
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print(f"Running app: {app}")
+    app.run(debug=True, host=os.getenv("FLASK_HOST", "0.0.0.0"), port=int(os.getenv("FLASK_PORT", 5000)))

@@ -67,7 +67,7 @@ def user_register():
 def login():
     global user_id
     if request.method == "OPTIONS":
-        return {"message": "CORS preflight"}, 200
+        return jsonify({}), 200  # Handle CORS preflight request
     data = request.get_json() or request.form
     username = data.get("username")
     password = data.get("password")
@@ -80,8 +80,10 @@ def login():
         return jsonify({"message": "Logged in", "user_id": str(user.id)})
     return jsonify({"error": "Invalid credentials"}), 401
 
-@user_bp.route('/dashboard', methods=['POST'])
+@user_bp.route('/dashboard', methods=['POST', 'OPTIONS'])
 def user_dashboard():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200  # Handle CORS preflight request
     global user_id
     if not user_id:
         return jsonify({"error": "Please log in to access your dashboard"}), 403
@@ -196,8 +198,10 @@ def serve_image(filename):
         return jsonify({"error": "Please log in to view images"}), 403
     return send_from_directory(USER_UPLOADS_DIR, filename)
 
-@user_bp.route('/delete_photo/<int:photo_id>', methods=['POST'])
+@user_bp.route('/delete_photo/<int:photo_id>', methods=['POST', 'OPTIONS'])
 def delete_user_photo(photo_id):
+    if request.method == "OPTIONS":
+        return jsonify({}), 200  # Handle CORS preflight request
     global user_id
     if not user_id:
         return jsonify({"error": "Please log in to delete photos"}), 403
@@ -217,8 +221,10 @@ def delete_user_photo(photo_id):
     db.session.commit()
     return jsonify({"message": f"Photo '{photo.filename}' deleted successfully"}), 200
 
-@user_bp.route('/delete_all_photos', methods=['POST'])
+@user_bp.route('/delete_all_photos', methods=['POST', 'OPTIONS'])
 def delete_all_photos():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200  # Handle CORS preflight request
     global user_id
     if not user_id:
         return jsonify({"error": "Please log in to delete photos"}), 403
@@ -239,8 +245,10 @@ def delete_all_photos():
     db.session.commit()
     return jsonify({"message": "All photos deleted successfully"}), 200
 
-@user_bp.route('/logout', methods=['POST'])
+@user_bp.route('/logout', methods=['POST', 'OPTIONS'])
 def user_logout():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200  # Handle CORS preflight request
     global user_id
     user_id = None
     return jsonify({"message": "You have been logged out successfully"}), 200
@@ -248,7 +256,7 @@ def user_logout():
 @user_bp.route('/api/user_data', methods=['GET', 'OPTIONS'])
 def get_user_data():
     if request.method == "OPTIONS":
-        return {"message": "CORS preflight"}, 200
+        return jsonify({}), 200  # Handle CORS preflight request
     global user_id
     user_id_from_request = request.args.get('user_id')
     if not user_id and not user_id_from_request:
@@ -261,7 +269,7 @@ def get_user_data():
 @user_bp.route('/data', methods=['GET', 'OPTIONS'])
 def get_user_data_alt():
     if request.method == "OPTIONS":
-        return {"message": "CORS preflight"}, 200
+        return jsonify({}), 200  # Handle CORS preflight request
     global user_id
     user_id_from_request = request.args.get('user_id')
     if not user_id and not user_id_from_request:

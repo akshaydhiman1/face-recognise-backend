@@ -42,9 +42,12 @@ def sanitize_filename(name):
 
 admin_logged_in = False
 
-@admin_bp.route('/login', methods=['GET', 'POST'])
+@admin_bp.route('/login', methods=['GET', 'POST', 'OPTIONS'])
 def admin_login():
     global admin_logged_in
+    if request.method == 'OPTIONS':
+        # Handle CORS preflight request
+        return jsonify({}), 200  # Empty response with 200 OK for preflight
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
